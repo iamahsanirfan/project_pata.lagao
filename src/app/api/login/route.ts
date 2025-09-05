@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import fs from 'fs';
-import path from 'path';
+import { kv } from '@vercel/kv';
 
 // Define the type for our login data
 interface LoginData {
@@ -42,30 +41,11 @@ export async function POST(request: NextRequest) {
       ip
     };
 
-    // Define the path for storing data
-    const dataDir = path.join(process.cwd(), 'data');
-    const filePath = path.join(dataDir, 'logins.json');
-
-    // Create data directory if it doesn't exist
-    if (!fs.existsSync(dataDir)) {
-      fs.mkdirSync(dataDir, { recursive: true });
-    }
-
-    // Read existing data
-    let existingData: LoginData[] = [];
-    if (fs.existsSync(filePath)) {
-      const fileContent = fs.readFileSync(filePath, 'utf-8');
-      existingData = JSON.parse(fileContent);
-    }
-
-    // Add new login data
-    existingData.push(loginData);
-
-    // Write back to file
-    fs.writeFileSync(filePath, JSON.stringify(existingData, null, 2));
-
-    // In a real application, you would validate credentials here
-    // and return a proper authentication token
+    // Store data in Vercel KV
+    const loginsKey = 'logins';
+    const existingLogins = await kv.get<LoginData[]>(loginsKey) || [];
+    existingLogins.push(loginData);
+    await kv.set(loginsKey, existingLogins);
 
     return NextResponse.json(
       { message: 'Login data stored successfully' },
@@ -83,16 +63,7 @@ export async function POST(request: NextRequest) {
 // GET endpoint to retrieve login data
 export async function GET() {
   try {
-    const dataDir = path.join(process.cwd(), 'data');
-    const filePath = path.join(dataDir, 'logins.json');
-
-    if (!fs.existsSync(filePath)) {
-      return NextResponse.json([], { status: 200 });
-    }
-
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    const logins = JSON.parse(fileContent);
-
+    const logins = await kv.get<LoginData[]>('logins') || [];
     return NextResponse.json(logins, { status: 200 });
   } catch (error) {
     console.error('Error reading login data:', error);

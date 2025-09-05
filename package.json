@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@vercel/kv": "^3.0.0",
     "autoprefixer": "^10.4.21",
     "next": "^15.0.0",
     "react": "^19.0.0-rc-65a56d0e-20241020",
