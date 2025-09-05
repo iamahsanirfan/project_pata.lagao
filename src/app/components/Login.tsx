@@ -212,7 +212,7 @@ export default function Login() {
         {/* Sign Up Section */}
         <div className="bg-white py-4 px-4 shadow rounded-lg sm:px-10 text-center">
           <p className="text-sm">
-            Don't have an account?{' '}
+            Don&apos;t have an account?{' '}
             <a href="#" className="font-medium text-blue-500 hover:text-blue-600">
               Sign up
             </a>
