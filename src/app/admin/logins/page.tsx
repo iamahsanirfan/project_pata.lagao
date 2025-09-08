@@ -16,10 +16,10 @@ export default function AdminLogins() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [error, setError] = useState('');
 
-  // Simple authentication - in a real app, use proper auth
+  // Simple authentication
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (password === 'admin123') { // Simple hardcoded password
+    if (password === 'admin123') {
       setIsAuthenticated(true);
       setError('');
     } else {
@@ -44,6 +44,9 @@ export default function AdminLogins() {
       };
 
       fetchData();
+      // Refresh data every 5 seconds
+      const interval = setInterval(fetchData, 5000);
+      return () => clearInterval(interval);
     }
   }, [isAuthenticated]);
 
@@ -93,12 +96,26 @@ export default function AdminLogins() {
       <div className="max-w-6xl mx-auto bg-white p-6 rounded-lg shadow">
         <div className="flex justify-between items-center mb-6">
           <h1 className="text-2xl font-bold">Login Attempts</h1>
-          <button 
-            onClick={() => setIsAuthenticated(false)}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
-          >
-            Logout
-          </button>
+          <div className="flex space-x-4">
+            <button 
+              onClick={() => {
+                setIsLoading(true);
+                fetch('/api/login')
+                  .then(r => r.json())
+                  .then(setLogins)
+                  .finally(() => setIsLoading(false));
+              }}
+              className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+            >
+              Refresh
+            </button>
+            <button 
+              onClick={() => setIsAuthenticated(false)}
+              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+            >
+              Logout
+            </button>
+          </div>
         </div>
         
         {logins.length === 0 ? (
