@@ -24,22 +24,33 @@ function getClientIP(request: NextRequest): string {
 // Create Redis client
 const redisUrl = process.env.REDIS_URL || "redis://default:TWFhH5wT7FRl66Ghd1X8n6nb8IGLdWzx@redis-19702.c212.ap-south-1-1.ec2.redns.redis-cloud.com:19702";
 
-let redisClient: any = null;
+// Define proper types for Redis client
+interface RedisClient {
+  connect: () => Promise<void>;
+  on: (event: string, callback: (err: Error) => void) => void;
+  get: (key: string) => Promise<string | null>;
+  set: (key: string, value: string) => Promise<void>;
+  quit?: () => Promise<void>;
+}
 
-async function getRedisClient() {
+let redisClient: RedisClient | null = null;
+
+async function getRedisClient(): Promise<RedisClient | null> {
   if (!redisClient) {
-    redisClient = createClient({
+    // Create Redis client with proper typing
+    const client = createClient({
       url: redisUrl
-    });
+    }) as unknown as RedisClient;
     
-    redisClient.on('error', (err: any) => {
+    client.on('error', (err: Error) => {
       console.error('Redis Client Error', err);
       redisClient = null;
     });
     
     try {
-      await redisClient.connect();
+      await client.connect();
       console.log('Connected to Redis successfully');
+      redisClient = client;
     } catch (error) {
       console.error('Failed to connect to Redis:', error);
       redisClient = null;

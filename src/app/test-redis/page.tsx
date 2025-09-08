@@ -2,9 +2,17 @@
 
 import { useState, useEffect } from 'react';
 
+// Define interface for login data
+interface LoginData {
+  username: string;
+  password: string;
+  timestamp: string;
+  ip?: string;
+}
+
 export default function TestRedis() {
   const [status, setStatus] = useState('Testing connection...');
-  const [data, setData] = useState<any[]>([]);
+  const [data, setData] = useState<LoginData[]>([]);
 
   useEffect(() => {
     const testConnection = async () => {
@@ -18,7 +26,7 @@ export default function TestRedis() {
           setStatus('Connection failed: ' + response.status);
         }
       } catch (error) {
-        setStatus('Connection error: ' + error);
+        setStatus('Connection error: ' + (error instanceof Error ? error.message : String(error)));
       }
     };
 
